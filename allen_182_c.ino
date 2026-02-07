@@ -96,6 +96,8 @@ Instead of a MIDI shield, two 220 ohm resistors plus a 5-pin DIN MIDI connector 
 // Declarations==========================================
 
 
+byte pistonChannel = 0; // 0..15
+
 //Counters (old Fortran habit)
 
 int i, j, k;
@@ -135,9 +137,9 @@ int oldOldExpression3 = 0, oldExpression3 = 0, newExpression3 = 0; // Expression
 
 
 
-byte controllerArray1 [33] = {32,32,32,32,32,32,32,32,32,39,46,54,61,68,76,83,90,97,104,111,119,127,127,127,127,127,127,127,127,127,127,127,127};
+//byte controllerArray1 [33] = {32,32,32,32,32,32,32,32,32,39,46,54,61,68,76,83,90,97,104,111,119,127,127,127,127,127,127,127,127,127,127,127,127};
 
-byte controllerArray2 [33] = {32,32,32,32,32,32,32,32,32,39,46,54,61,68,76,83,90,97,104,111,119,127,127,127,127,127,127,127,127,127,127,127,127};
+//byte controllerArray2 [33] = {32,32,32,32,32,32,32,32,32,39,46,54,61,68,76,83,90,97,104,111,119,127,127,127,127,127,127,127,127,127,127,127,127};
 
 byte controllerArray3 [33] = {32,32,32,32,32,32,32,32,32,39,46,54,61,68,76,83,90,97,104,111,119,127,127,127,127,127,127,127,127,127,127,127,127};
 
@@ -155,84 +157,44 @@ byte controllerArray3 [33] = {32,32,32,32,32,32,32,32,32,39,46,54,61,68,76,83,90
 
 //Initialize =========================================================
 
-void setup()
-
-{
-
+void setup() {
     //  Set MIDI baud rate:
-
     Serial.begin(31250);
 
 
-
     //Initialize  output (normally high)
-
-    for (i = 20; i < 42; i++)
-
-    {
-
+    for (i = 20; i <= 41; i++) {
         pinMode (i, OUTPUT);
-
         digitalWrite (i, HIGH);
-
     }
 
-
-
-    for (i = 54; i < 61; i++)
-
-    {
-
+    for (i = 54; i <= 60; i++) {
         pinMode (i, OUTPUT);
-
         digitalWrite (i, HIGH);
-
     }
-
 
 
     //Initialize input. Normally high (via internal pullups)
-
-    for (i = 42; i < 54; i++)
-
-        { pinMode (i, INPUT_PULLUP);}
-
-
-
-    for (i = 2; i < 13; i++)
-
-        { pinMode (i, INPUT_PULLUP);}
-
-
-
-    for (i = 14; i < 20; i++)
-
-        { pinMode (i, INPUT_PULLUP);}
-
-
-
-     for (i = 61; i < 67; i++)
-
-        { pinMode (i, INPUT_PULLUP);}
-
-
-
+    // manual pins: 20-42, 44, 46, 48, 50, 52
+    // piston pins: 2-19, 43, 45, 47, 49, 51, 53, 61-66
+    for (i=2; i<=19; ++i) {
+    	pinMode (i, INPUT_PULLUP);
+    }
+    for (i = 42; i <= 53; i++) {
+        pinMode (i, INPUT_PULLUP);
+    }
+    for (i=61; i<=66; ++i) {
+    	pinMode (i, INPUT_PULLUP);
+    }
 
 
     //Initialize debounce count arrays to zero
-
     for (i= 0; i < 100; i++){
-
       swellDebounceArray[i] = 0;
-
       greatDebounceArray[i] = 0;
-
       pistonDebounceArray[i] = 0;
-
       pedalDebounceArray[i] = 0;
-
      }
-
 }
 
 
@@ -599,7 +561,7 @@ void turnONpiston ()
 
         {
 
-            Serial.write (0x93);          //note ON, channel 4
+            Serial.write (0x90 + pistonChannel);          //note ON
 
             Serial.write (noteNumber);
 
@@ -622,7 +584,7 @@ void turnOFFpiston ()
 
         {
 
-           Serial.write (0x93);          //note ON, channel 4
+           Serial.write (0x90 + pistonChannel);          //note ON
 
            Serial.write (noteNumber);
 
@@ -636,47 +598,60 @@ void turnOFFpiston ()
 
 
 void scanPistons ()
-
     {
 
     noteNumber = 36;
+    int i;
+
+    // Cancel, Set
+    for (i = 2; i <= 3; i++)
+
+        { if  (digitalRead(i) == LOW) {turnONpiston ();} else {turnOFFpiston ();}
+
+             noteNumber++; }
+
+    // Great 1-6
+    for (i = 61; i <= 66; i++)
+
+       { if  (digitalRead(i) == LOW) {turnONpiston ();} else {turnOFFpiston ();}
+
+            noteNumber++; }
 
 
 
-    for (i = 2; i < 13; i++)
+
+
+	// Swell 1-6
+	for (i = 14; i <= 19; i++)
+
+		{ if  (digitalRead(i) == LOW) {turnONpiston ();} else {turnOFFpiston ();}
+
+			 noteNumber++; }
+
+
+    // Pedal 1-6
+    for (i = 4; i <= 9; i++)
 
         { if  (digitalRead(i) == LOW) {turnONpiston ();} else {turnOFFpiston ();}
 
              noteNumber++; }
 
 
-
-    for (i = 14; i < 20; i++)
-
-        { if  (digitalRead(i) == LOW) {turnONpiston ();} else {turnOFFpiston ();}
-
-             noteNumber++; }
-
-
-
-    for (i = 43; i < 54; i+=2)
+    // General 1-4
+    for (i = 10; i <= 13; i++)
 
         { if  (digitalRead(i) == LOW) {turnONpiston ();} else {turnOFFpiston ();}
 
              noteNumber++; }
 
-
-
-     for (i = 61; i < 67; i++)
+    // General 5-10
+    for (i = 43; i <= 53; i+=2)
 
         { if  (digitalRead(i) == LOW) {turnONpiston ();} else {turnOFFpiston ();}
 
              noteNumber++; }
 
-     }
-
-
-
+    }
 
 //Expression pedal input:
 
@@ -690,10 +665,10 @@ void scanPistons ()
 void scanExpressionPedal1()
 
 {
-
+// local var TODO
   newExpression1 = analogRead (67);                      //0 to 1023
 
-  newExpression1 = (newExpression1 + 1) / 32;             //0 to 32
+  newExpression1 = (newExpression1 + 1) / 32;             //0 to 31 (the way we have the potentiometer not going full range)
 
 
 
@@ -705,35 +680,34 @@ void scanExpressionPedal1()
 
     oldExpression1 = newExpression1;
 
-    newExpression1 = controllerArray1 [newExpression1];   //extract controller value from array
+    //newExpression1 = controllerArray1 [newExpression1];   //extract controller value from array
+    // just interpolate from 0..31 => 0 to 127
 
+	int v = 127 - (newExpression1 * 127 / 31);
 
-
-    if (newExpression1 > 127)
-
-    {
-
-      newExpression1 = 127;                             //correct out of range controller value
-
+    if (v > 127) {
+      v = 127;                             //correct out of range controller value
     }
+	if (v < 0) {
+		v = 0;
+	}
 
     for (int ch = 0; ch < 3; ++ch) {
 		Serial.write (0xB0 | ch);                          //controller (channel ch)
 		Serial.write (7);                                  //control number 7 (volume) which is what aoleus expects --  11 is expression
-		Serial.write (newExpression1);
+		Serial.write (v);
     }
   }
 
 }
 
-
 void scanExpressionPedal2()
 
 {
-
+// local var TODO
   newExpression2 = analogRead (68);                      //0 to 1023
 
-  newExpression2 = (newExpression2 + 1) / 32;             //0 to 32
+  newExpression2 = (newExpression2 + 1) / 32;             //0 to 31 (the way we have the potentiometer not going full range)
 
 
 
@@ -745,29 +719,26 @@ void scanExpressionPedal2()
 
     oldExpression2 = newExpression2;
 
-    newExpression2 = controllerArray2 [newExpression2];   //extract controller value from array
+    //newExpression1 = controllerArray1 [newExpression1];   //extract controller value from array
+    // just interpolate from 0..31 => 0 to 127
 
+	int v = 127 - (newExpression2 * 127 / 31);
 
-
-    if (newExpression2 > 127)
-
-    {
-
-      newExpression2 = 127;                             //correct out of range controller value
-
+    if (v > 127) {
+      v = 127;                             //correct out of range controller value
     }
+	if (v < 0) {
+		v = 0;
+	}
 
-
-    Serial.write (0xB1);                               //controller (channel 2 (great crescendo))
-
-    Serial.write (1);                                  //control number 2
-
-    Serial.write (newExpression2);
-
+    for (int ch = 0; ch < 3; ++ch) {
+		Serial.write (0xB0 | ch);                          //controller (channel ch)
+		Serial.write (1);                                  //control number 1 (??? unknown what it should be for future software)
+		Serial.write (v);
+    }
   }
 
 }
-
 
 
 void scanExpressionPedal3()
@@ -826,7 +797,7 @@ void loop()
 
     scanExpressionPedal1();         // Arduino pin 67
 
-    //scanExpressionPedal2();         // Arduino pin 68
+    scanExpressionPedal2();         // Arduino pin 68
 
     //scanExpressionPedal3();         // Arduino pin 69
 
