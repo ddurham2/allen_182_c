@@ -96,7 +96,16 @@ Instead of a MIDI shield, two 220 ohm resistors plus a 5-pin DIN MIDI connector 
 // Declarations==========================================
 
 
-byte pistonChannel = 0; // 0..15
+byte pistonChannel = 15; // 0..15
+
+byte exprPedal1Channel = 15;
+byte exprPedal1CC = 1;
+
+byte exprPedal2Channel = 15;
+byte exprPedal2CC = 2;
+
+byte exprPedal3Channel = 15;
+byte exprPedal3CC = 3;
 
 //Counters (old Fortran habit)
 
@@ -692,11 +701,9 @@ void scanExpressionPedal1()
 		v = 0;
 	}
 
-    for (int ch = 0; ch < 3; ++ch) {
-		Serial.write (0xB0 | ch);                          //controller (channel ch)
-		Serial.write (7);                                  //control number 7 (volume) which is what aoleus expects --  11 is expression
-		Serial.write (v);
-    }
+	Serial.write (0xB0 | exprPedal1Channel);
+	Serial.write (exprPedal1CC);
+	Serial.write (v);
   }
 
 }
@@ -731,11 +738,9 @@ void scanExpressionPedal2()
 		v = 0;
 	}
 
-    for (int ch = 0; ch < 3; ++ch) {
-		Serial.write (0xB0 | ch);                          //controller (channel ch)
-		Serial.write (1);                                  //control number 1 (??? unknown what it should be for future software)
-		Serial.write (v);
-    }
+	Serial.write (0xB0 | exprPedal2Channel);
+	Serial.write (exprPedal2CC);
+	Serial.write (v);
   }
 
 }
@@ -772,10 +777,8 @@ void scanExpressionPedal3()
     }
 
 
-    Serial.write (0xB3);                               //controller (channel 4)
-
-    Serial.write (2);                                  //control number 3
-
+    Serial.write (0xB0 | exprPedal3Channel);
+    Serial.write (exprPedal3CC);
     Serial.write (newExpression3);
 
   }
